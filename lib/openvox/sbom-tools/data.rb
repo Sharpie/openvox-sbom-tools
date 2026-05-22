@@ -15,7 +15,11 @@ module OpenVox::SBOMTools
                                    path: 'default_gems.json'},
       'ruby_bundled_gems.json' => {repo: 'janlelis/stdgems',
                                    branch: 'main',
-                                   path: 'bundled_gems.json'}
+                                   path: 'bundled_gems.json'},
+
+      'runtime_component_info.json' => {repo: 'OpenVoxProject/puppet-runtime',
+                                        branch: 'main',
+                                        path: 'component_info.json'},
     }
 
     module_function
