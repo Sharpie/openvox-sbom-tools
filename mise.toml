@@ -1,4 +1,6 @@
-min_version = "2026.5.13"
+# This release graduated the Ruby "compile" setting
+# out of experimental status.
+min_version = "2026.2.8"
 
 [tools]
 ruby = "4.0"
