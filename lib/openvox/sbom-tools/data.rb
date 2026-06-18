@@ -17,6 +17,10 @@ module OpenVox::SBOMTools
                                    branch: 'main',
                                    path: 'bundled_gems.json'},
 
+      'platforms.json' => {repo: 'OpenVoxProject/shared-actions',
+                           branch: 'main',
+                           path: 'platforms.json'},
+
       'runtime_component_info.json' => {repo: 'OpenVoxProject/puppet-runtime',
                                         branch: 'main',
                                         path: 'component_info.json'},
