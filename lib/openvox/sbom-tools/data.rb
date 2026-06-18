@@ -1,3 +1,5 @@
+require 'json'
+
 require_relative '../sbom-tools'
 require_relative 'sources'
 
@@ -30,6 +32,15 @@ module OpenVox::SBOMTools
 
     def read_file(name)
       File.read(file_path(name))
+    end
+
+    def [](name)
+      case File.extname(name)
+      when '.json'
+        JSON.parse(read_file(name))
+      else
+        read_file(name)
+      end
     end
 
     def update!(specific_file = nil)
