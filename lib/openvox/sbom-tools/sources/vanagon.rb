@@ -4,6 +4,7 @@ require 'rubygems/version'
 require 'stringio'
 
 require_relative '../data'
+require_relative '../exec'
 require_relative '../sources'
 
 module OpenVox::SBOMTools::Sources
@@ -15,6 +16,8 @@ module OpenVox::SBOMTools::Sources
   #  - Assign an Array to @projects
   #  - Implement the platform_list method
   class Vanagon
+    include OpenVox::SBOMTools::Exec
+
     CACHE_DIR = File.join(Dir.home, '.cache', 'openvox-sbom-tools').freeze
 
     attr_reader :data_file, :cache_dir
@@ -128,29 +131,6 @@ module OpenVox::SBOMTools::Sources
         exec('git', 'fetch', 'origin', '--tags', '--prune', '--prune-tags',
              workdir: @cache_dir)
       end
-    end
-
-    # TODO: Should be in a utility module.
-    def exec(*command_line, workdir: nil)
-      out = StringIO.new
-      out_r, out_w = IO.pipe
-
-      opts = {out: out_w, err: $stderr}
-      opts[:chdir] = workdir unless workdir.nil?
-
-      pid = Process.spawn(*command_line, opts)
-
-      out_w.close
-      reader = Thread.new do
-        while line = out_r.gets
-          out << line
-        end
-      end
-
-      Process.wait(pid)
-      reader.join
-
-      out.string
     end
   end
 end
