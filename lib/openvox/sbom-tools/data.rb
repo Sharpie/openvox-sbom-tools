@@ -21,7 +21,9 @@ module OpenVox::SBOMTools
 
       'runtime_component_info.json' => {repo: 'OpenVoxProject/puppet-runtime'},
       'openvox-agent_component_info.json' => {repo: 'OpenVoxProject/openvox',
-                                              path: 'packaging'}
+                                              path: 'packaging'},
+      'openbolt_component_info.json' => {repo: 'OpenVoxProject/openbolt',
+                                         path: 'packaging'},
     }
 
     module_function
@@ -53,6 +55,8 @@ module OpenVox::SBOMTools
                    OpenVox::SBOMTools::Sources::Runtime.new(file, **opts)
                  when 'openvox-agent_component_info.json'
                    OpenVox::SBOMTools::Sources::OpenVoxAgent.new(file, **opts)
+                 when 'openbolt_component_info.json'
+                   OpenVox::SBOMTools::Sources::OpenBolt.new(file, **opts)
                  else
                    OpenVox::SBOMTools::Sources::GitHub.new(file, **opts)
                  end

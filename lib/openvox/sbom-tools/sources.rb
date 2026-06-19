@@ -6,5 +6,6 @@ module OpenVox::SBOMTools
 
     require_relative 'sources/runtime'
     require_relative 'sources/openvox-agent'
+    require_relative 'sources/openbolt'
   end
 end
