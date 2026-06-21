@@ -1,4 +1,6 @@
 require 'json'
+require 'rubygems/version'
+require 'rubygems/requirement'
 
 require_relative '../sbom-tools'
 require_relative 'sources'
@@ -25,6 +27,10 @@ module OpenVox::SBOMTools
       'openbolt_component_info.json' => {repo: 'OpenVoxProject/openbolt',
                                          path: 'packaging'},
     }
+
+    FIRST_8X_TAG      = Gem::Requirement.new('>= 8.0.0')
+    RUNTIME_8X_CUTOFF = Gem::Requirement.new('~> 8.27')
+    FIRST_9X_TAG      = Gem::Requirement.new('>= 9.0.0-alpha1')
 
     module_function
 
@@ -63,6 +69,47 @@ module OpenVox::SBOMTools
 
         source.update!
       end
+    end
+
+    # Return consolidated map of component => version for Vanagon projects
+    def vanagon_components(project, tag)
+      version = Gem::Version.new(tag)
+
+      runtime, components = case [project, version]
+                            in ['openbolt', Object]
+                              ['openbolt-runtime',
+                               'openbolt_component_info.json']
+                            in ['openvox-agent', RUNTIME_8X_CUTOFF]
+                              ['agent-runtime-8.x',
+                               'openvox-agent_component_info.json']
+                            in ['openvox-agent', FIRST_8X_TAG]
+                              ['agent-runtime-main',
+                               'openvox-agent_component_info.json']
+                            in ['openvox-agent', FIRST_9X_TAG]
+                              ['agent-runtime-main',
+                               'openvox-agent_component_info.json']
+                            else
+                              raise ArgumentError,
+                                format('No data for project %<project>s and tag %<tag>s',
+                                       project:, tag:)
+                            end
+
+      project_components = self[components][tag]
+
+      if project_components.nil?
+        raise ArgumentError, format('No tag %<tag>s found in %<components>s',
+                                    tag:, components:)
+      end
+
+      project_components = project_components['projects'][project].values.reduce(&:merge)
+
+      runtime_name    = project_components.keys.find {|k| k =~ /-runtime$/}
+      runtime_version = project_components[runtime_name]
+
+      runtime_components = self['runtime_component_info.json'][runtime_version]
+      runtime_components = runtime_components['projects'][runtime].values.reduce(&:merge)
+
+      project_components.merge(runtime_components)
     end
   end
 end
