@@ -111,5 +111,24 @@ module OpenVox::SBOMTools
 
       project_components.merge(runtime_components)
     end
+
+    # Return map of gem name => version for gems bundled with a Ruby release.
+    def std_gems(ruby_version)
+      # stdgems.org only records .Z releases where gem versions change.
+      # Therefore, we need generate the X.Y version to use as a fall-back:
+      release = ruby_version.to_f.to_s
+
+      [self['ruby_default_gems.json'], self['ruby_bundled_gems.json']].flat_map do |dataset|
+        dataset['gems'].map do |gem|
+          version = ruby_version if gem['versions'].keys.include?(ruby_version)
+          version ||= release if gem['versions'].keys.include?(release)
+
+          # Gem does not exist in this release.
+          next nil if version.nil?
+
+          [gem['gem'], gem['versions'][version]]
+        end.compact
+      end.to_h
+    end
   end
 end
