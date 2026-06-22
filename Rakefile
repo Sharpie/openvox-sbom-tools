@@ -56,5 +56,21 @@ namespace :vox do
 
       $stdout.puts OpenVox::SBOMTools::MarkdownTables.plain_text(table)
     end
+
+    desc "Print CVEs fixes between project tags."
+    task :cves_fixed, [:project, :from, :to] do |_, args|
+      data = OpenVox::SBOMTools::Report.cves_fixed(args[:project], args[:from], args[:to])
+      # Sort by package name, then by CVSS score. Score positions are
+      # swapped to create descending order.
+      data.sort! {|a, b| [a[:resolved_by].to_s, b[:score]&.to_f] <=> [b[:resolved_by].to_s, a[:score]&.to_f]}
+      data.map!  {|c| [c[:id], c[:score] || 'N/A', c[:resolved_by]]}
+
+      labels = ['Identifier', 'CVSS 3.1 Score', 'Resolved By']
+      table = OpenVox::SBOMTools::MarkdownTables.make_table(labels, data,
+                                                            align: %w[l c l],
+                                                            is_rows: true)
+
+      $stdout.puts OpenVox::SBOMTools::MarkdownTables.plain_text(table)
+    end
   end
 end

@@ -110,5 +110,38 @@ module OpenVox::SBOMTools
 
       cves
     end
+
+    def cves_fixed(project, from, to)
+      sbom = OpenVox::SBOMTools::SBOM[project, to]
+      cves_before = cves(project, from)
+      cves_after  = cves(project, to)
+
+      extract_purls = lambda do |bom|
+        bom['components'].map do |c|
+          purl = if c.key?('purl')
+                   Purl.parse(c['purl'])
+                 else
+                   nil
+                 end
+
+          if c.key?('components')
+            [purl, extract_purls.call(c)]
+          else
+            purl
+          end
+        end.compact
+      end
+
+      purls = extract_purls.call(sbom).flatten
+
+      ids_after = cves_after.map {|c| c[:id]}
+      fixed = cves_before.select {|c| ! ids_after.include?(c[:id]) }
+
+      fixed.each do |cve|
+        cve[:resolved_by] = purls.find {|c| cve[:affects].versionless == c.versionless}
+      end
+
+      fixed
+    end
   end
 end
