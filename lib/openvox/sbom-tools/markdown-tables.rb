@@ -93,12 +93,38 @@ module OpenVox::SBOMTools
         }
       }
 
-      border = "\n|" + widths.map {|w| '=' * w}.join('|') + "|\n"
+      alignment_line = widths.map.with_index do |width, index|
+        col = '-' * width
+
+        # Add padding
+        col[0] = ' '
+        col[-1] = ' '
+
+        # FIXME: To work properly, each column must be at least 3
+        #        characters wide. If column labels are 3+ characters,
+        #        then there is no problemo.
+        case alignments[index]
+        when /:-+:/
+          # Centered
+          col[1]  = ':'
+          col[-2] = ':'
+        when /-+:/
+          # Right
+          col[-2] = ':'
+        else
+          # Left
+          col[1]  = ':'
+        end
+
+        col
+      end
+
       return (
-        border + [
+        [
           '|' + labels.join('|') + '|',
-          rows.map {|row| '|' + row.join('|') + '|'}.join(border.tr('=', '-'))
-        ].join(border) + border
+          '|' + alignment_line.join('|') + '|',
+          rows.map {|row| '|' + row.join('|') + '|'}
+        ].flatten.join("\n")
       ).strip
 
     end
