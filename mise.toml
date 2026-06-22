@@ -16,7 +16,7 @@ BUNDLE_PATH = "./vendor"
 
 # === Ruby Operations ===
 [tasks.bundle-install]
-run     = ["bundle install", "bundle binstubs rake"] 
+run     = ["bundle install", "bundle binstubs rake vanagon"]
 sources = ["Gemfile", "Gemfile.local"]
 
 [tasks.rake]
