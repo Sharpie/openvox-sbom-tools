@@ -1,5 +1,7 @@
 require 'json'
 require 'purl'
+require 'rubygems/version'
+require 'rubygems/requirement'
 
 require_relative '../sbom-tools'
 require_relative 'exec'
@@ -7,6 +9,17 @@ require_relative 'sbom'
 
 module OpenVox::SBOMTools
   module Report
+    # Some versions of puppet-runtime carry patches or other fixes
+    # that Grype does not recognize.
+    RUNTIME_CVE_FIXES = {
+      # Augeas CVE, fixed by applying a patch in:
+      #   https://github.com/OpenVoxProject/puppet-runtime/commit/4a025e26cdb38e479d1e07d75144c14eb76da909
+      '>= 2025.09.04.1' => %w[CVE-2025-2588],
+      # LibXML2 CVEs, fixed by upgrading to 2.15.3 in:
+      #   https://github.com/OpenVoxProject/puppet-runtime/commit/95e89907f35bdab9e75de61b7cdd3433ae1b749f
+      '>= 2026.05.11.1' => %w[CVE-2025-6021 CVE-2025-6170],
+    }
+
     module_function
 
     def components(project, tag)
@@ -81,6 +94,19 @@ module OpenVox::SBOMTools
 
         {id:, url:, score:, affects:}
       end
+
+      runtime_component = data['components'].find {|c| c['name'] =~ /-runtime$/}
+      runtime_version   = Gem::Version.new(runtime_component['version'])
+
+      fixed_cves = RUNTIME_CVE_FIXES.flat_map do |fix_version, ids|
+        if Gem::Requirement.new(fix_version).satisfied_by?(runtime_version)
+          ids
+        else
+          []
+        end
+      end
+
+      cves.reject! {|c| fixed_cves.include?(c[:id])}
 
       cves
     end
