@@ -11,6 +11,7 @@ def location_for(place)
 end
 
 gem 'rake', '~> 13.4'
+gem 'sbom', '~> 0.4'
 gem 'vanagon', *location_for(ENV['VANAGON_LOCATION'] || 'https://github.com/openvoxproject/vanagon#main')
 
 local_gemfile = File.join(File.dirname(__FILE__), "Gemfile.local")

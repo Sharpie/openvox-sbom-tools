@@ -6,5 +6,10 @@ namespace :vox do
     task :update_data, [:file] do |_, args|
       OpenVox::SBOMTools::Data.update!(args[:file])
     end
+
+    desc "Generate SBOM for project and tag."
+    task :gen, [:project, :tag] do |_, args|
+      OpenVox::SBOMTools::SBOM.generate!(args[:project], args[:tag])
+    end
   end
 end
