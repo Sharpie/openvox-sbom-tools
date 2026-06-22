@@ -1,4 +1,6 @@
 require 'json'
+require 'rubygems/version'
+require 'rubygems/requirement'
 
 require_relative '../generator'
 require_relative '../data'
@@ -35,6 +37,15 @@ module OpenVox::SBOMTools::Generator
                             namespace: 'ruby'}},
     }
 
+    # Updates to gems bundled with Ruby
+    #
+    # Key is a tuple of runtime version constraints, then ruby version
+    # constraints. Value is a list of updates.
+    BUNDLED_GEM_UPDATES = {
+      [['>= 2026.05.11.1'], ['~> 3.2']] => {'net-imap' => '0.4.24',
+                                            'erb'      => '4.0.3.1'},
+    }
+
     def initialize(file, project, tag)
       @file    = file
       @project = project
@@ -61,6 +72,9 @@ module OpenVox::SBOMTools::Generator
       sbom.add_document(meta)
 
       project_components = OpenVox::SBOMTools::Data.vanagon_components(project, tag)
+      runtime_name    = project_components.keys.find {|k| k =~ /-runtime$/}
+      runtime_version = Gem::Version.new(project_components[runtime_name])
+
       project_components.each do |name, version|
         # version-less components are usually internal project build steps
         next if version.nil?
@@ -89,8 +103,18 @@ module OpenVox::SBOMTools::Generator
         # Populate sub-BOM for Ruby
         if name == 'ruby'
           pkg.package_type = 'platform'
+          ruby_version = Gem::Version.new(version)
 
           gems = OpenVox::SBOMTools::Data.std_gems(version)
+
+          BUNDLED_GEM_UPDATES.each do |(runtime_requirement, ruby_requirement), update|
+            runtime_requirement = Gem::Requirement.new(*runtime_requirement)
+            ruby_requirement = Gem::Requirement.new(*ruby_requirement)
+
+            if runtime_requirement.satisfied_by?(runtime_version) && ruby_requirement.satisfied_by?(ruby_version)
+              gems.merge!(update)
+            end
+          end
 
           gems.each do |gem_name, gem_version|
             gem = Sbom::Data::Package.new
