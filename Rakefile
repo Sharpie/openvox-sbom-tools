@@ -1,6 +1,16 @@
 require_relative 'lib/openvox/sbom-tools'
 require_relative 'lib/openvox/sbom-tools/markdown-tables'
 
+def validate_project!(project)
+  valid_projects = %w[openvox-agent openbolt]
+
+  unless valid_projects.include?(project)
+    raise ArgumentError,
+          format('The only valid project arguments for this task are: %<projects>s',
+                 projects: valid_projects.join(', '))
+  end
+end
+
 namespace :vox do
   namespace :sbom do
     desc "Update data files containing component versions."
@@ -10,11 +20,15 @@ namespace :vox do
 
     desc "Generate SBOM for project and tag."
     task :gen, [:project, :tag] do |_, args|
+      validate_project!(args[:project])
+
       OpenVox::SBOMTools::SBOM.generate!(args[:project], args[:tag])
     end
 
     desc "Print components for project and tag."
     task :components, [:project, :tag] do |_, args|
+      validate_project!(args[:project])
+
       data = OpenVox::SBOMTools::Report.components(args[:project], args[:tag])
       data = data.sort_by {|c| c[:name] }.map {|c| [c[:name], c[:version]]}
 
@@ -28,6 +42,8 @@ namespace :vox do
 
     desc "Print component changes between project tags."
     task :component_diff, [:project, :from, :to] do |_, args|
+      validate_project!(args[:project])
+
       data = OpenVox::SBOMTools::Report.component_diff(args[:project],
                                                        args[:from],
                                                        args[:to])
@@ -43,6 +59,8 @@ namespace :vox do
 
     desc "Print CVEs reported for project and tag."
     task :cves, [:project, :tag] do |_, args|
+      validate_project!(args[:project])
+
       data = OpenVox::SBOMTools::Report.cves(args[:project], args[:tag])
       # Sort by package name, then by CVSS score. Score positions are
       # swapped to create descending order.
@@ -59,6 +77,8 @@ namespace :vox do
 
     desc "Print CVEs fixes between project tags."
     task :cves_fixed, [:project, :from, :to] do |_, args|
+      validate_project!(args[:project])
+
       data = OpenVox::SBOMTools::Report.cves_fixed(args[:project], args[:from], args[:to])
       # Sort by package name, then by CVSS score. Score positions are
       # swapped to create descending order.
