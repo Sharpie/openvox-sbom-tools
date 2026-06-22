@@ -4,6 +4,7 @@ min_version = "2026.2.8"
 
 [tools]
 ruby = "4.0"
+grype = "latest"
 
 [settings.ruby]
 compile = false

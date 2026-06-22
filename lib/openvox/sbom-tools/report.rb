@@ -1,6 +1,8 @@
+require 'json'
 require 'purl'
 
 require_relative '../sbom-tools'
+require_relative 'exec'
 require_relative 'sbom'
 
 module OpenVox::SBOMTools
@@ -57,6 +59,30 @@ module OpenVox::SBOMTools
       end
 
       diff.compact
+    end
+
+    def cves(project, tag)
+      sbom_path = OpenVox::SBOMTools::SBOM.file_path(project, tag)
+
+      cve_report = OpenVox::SBOMTools::Exec.exec('grype', '--output=cyclonedx-json',
+                                                 sbom_path)
+
+      # TODO Handle failures.
+      data = JSON.parse(cve_report.stdout)
+
+      cves = data['vulnerabilities'].map do |vuln|
+        id = vuln['id']
+        url = vuln['source']['url']
+        score = vuln['ratings'].find {|r| r['method'] == 'CVSSv31'}&.dig('score')
+        affects = Purl.parse(vuln['affects'].first['ref'])
+        # Grype echos PURLs back with data duplicated into the qualifiers
+        # hash. Empty this out to tidy output up.
+        affects.instance_variable_set(:@qualifiers, {})
+
+        {id:, url:, score:, affects:}
+      end
+
+      cves
     end
   end
 end
