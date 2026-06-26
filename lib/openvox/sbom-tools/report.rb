@@ -103,17 +103,20 @@ module OpenVox::SBOMTools
       end
 
       runtime_component = data['components'].find {|c| c['name'] =~ /-runtime$/}
-      runtime_version   = Gem::Version.new(runtime_component['version'])
 
-      fixed_cves = RUNTIME_CVE_FIXES.flat_map do |fix_version, ids|
-        if Gem::Requirement.new(fix_version).satisfied_by?(runtime_version)
-          ids
-        else
-          []
+      unless runtime_component.nil?
+        runtime_version   = Gem::Version.new(runtime_component['version'])
+
+        fixed_cves = RUNTIME_CVE_FIXES.flat_map do |fix_version, ids|
+          if Gem::Requirement.new(fix_version).satisfied_by?(runtime_version)
+            ids
+          else
+            []
+          end
         end
-      end
 
-      cves.reject! {|c| fixed_cves.include?(c[:id])}
+        cves.reject! {|c| fixed_cves.include?(c[:id])}
+      end
 
       cves
     end
