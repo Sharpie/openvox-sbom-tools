@@ -77,7 +77,8 @@ module OpenVox::SBOMTools
     def cves(project, tag)
       sbom_path = OpenVox::SBOMTools::SBOM.file_path(project, tag)
 
-      cve_report = OpenVox::SBOMTools::Exec.exec('grype', '--output=cyclonedx-json',
+      cve_report = OpenVox::SBOMTools::Exec.exec('grype', '--by-cve',
+                                                 '--output=cyclonedx-json',
                                                  sbom_path)
 
       # TODO Handle failures.
