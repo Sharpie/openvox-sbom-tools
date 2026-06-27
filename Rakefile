@@ -2,7 +2,7 @@ require_relative 'lib/openvox/sbom-tools'
 require_relative 'lib/openvox/sbom-tools/markdown-tables'
 
 def validate_project!(project)
-  valid_projects = %w[openvox-agent openbolt]
+  valid_projects = %w[openvox-agent openbolt openvox-server openvoxdb]
 
   unless valid_projects.include?(project)
     raise ArgumentError,
