@@ -1,10 +1,8 @@
 require 'digest/sha1'
 require 'json'
-require 'net/http'
-require 'openssl'
-require 'uri'
 
 require_relative '../sources'
+require_relative '../http'
 
 module OpenVox::SBOMTools::Sources
   class GitHub
@@ -63,33 +61,7 @@ module OpenVox::SBOMTools::Sources
     end
 
     def download_file(download_url)
-      url     = URI.parse(download_url)
-      request = Net::HTTP::Get.new(url)
-
-      Net::HTTP.start(url.hostname, url.port, use_ssl: true) do |http|
-        http.request(request) do |response|
-          case response
-          when Net::HTTPSuccess
-            # Open file in write-binary mode and stream the body segments
-            File.open(@data_file, 'wb') do |file|
-              response.read_body do |chunk|
-                file.write(chunk)
-              end
-            end
-
-            $stderr.puts "Downloaded - #{download_url}"
-          when Net::HTTPRedirection
-            # GitHub frequently redirects requests to its underlying asset
-            # servers. Recurse using the new location provided
-            # in the 'location' header.
-            redirect_url = response['location']
-            $stderr.puts "Following redirect to: #{redirect_url}"
-            download_file(redirect_url)
-          else
-            raise "Failed to download file. HTTP Status: #{response.code} - #{response.message}"
-          end
-        end
-      end
+      OpenVox::SBOMTools::HTTP.get_file(download_url, @data_file)
     end
   end
 end
