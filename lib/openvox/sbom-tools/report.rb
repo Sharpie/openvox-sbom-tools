@@ -95,9 +95,12 @@ module OpenVox::SBOMTools
               end
         score = vuln['ratings'].find {|r| r['method'] == 'CVSSv31'}&.dig('score')
         affects = Purl.parse(vuln['affects'].first['ref'])
-        # Grype echos PURLs back with data duplicated into the qualifiers
-        # hash. Empty this out to tidy output up.
-        affects.instance_variable_set(:@qualifiers, {})
+
+        # Grype echos PURLs back with a "package-id" added to the qualifiers.
+        # Remove this so that vulnerabilities can be matched to SBOMs using
+        # the PURL.
+        qualifiers = affects.instance_variable_get(:@qualifiers)
+        qualifiers.delete('package-id') if qualifiers.is_a?(Hash)
 
         {id:, url:, score:, affects:}
       end

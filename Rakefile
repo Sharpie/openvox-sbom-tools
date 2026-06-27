@@ -1,3 +1,5 @@
+require 'purl'
+
 require_relative 'lib/openvox/sbom-tools'
 require_relative 'lib/openvox/sbom-tools/markdown-tables'
 
@@ -9,6 +11,20 @@ def validate_project!(project)
           format('The only valid project arguments for this task are: %<projects>s',
                  projects: valid_projects.join(', '))
   end
+end
+
+# Strip qualifiers and other noise from PURLs to generate clean output.
+def clean_purl(purl)
+  # A bare name, just echo it back.
+  return purl unless purl.to_s.start_with?('pkg:')
+
+  # Duplicate Purl
+  cleaned = Purl.parse(purl.to_s)
+
+  # Empty the qualifiers hash to reduce clutter in the output.
+  cleaned.instance_variable_set(:@qualifiers, {})
+
+  cleaned.to_s
 end
 
 namespace :vox do
@@ -30,7 +46,8 @@ namespace :vox do
       validate_project!(args[:project])
 
       data = OpenVox::SBOMTools::Report.components(args[:project], args[:tag])
-      data = data.sort_by {|c| c[:name] }.map {|c| [c[:name], c[:version]]}
+      data = data.map {|c| [clean_purl(c[:name]), c[:version]]}
+      data.sort_by! {|c| c.first }
 
       labels = ['Component', 'Version']
       table = OpenVox::SBOMTools::MarkdownTables.make_table(labels, data,
@@ -47,7 +64,8 @@ namespace :vox do
       data = OpenVox::SBOMTools::Report.component_diff(args[:project],
                                                        args[:from],
                                                        args[:to])
-      data = data.sort_by {|c| c.first}
+      data.each {|c| c[0] = clean_purl(c[0]) }
+      data.sort_by! {|c| c.first}
 
       labels = ['Component', 'Old Version', 'New Version']
       table = OpenVox::SBOMTools::MarkdownTables.make_table(labels, data,
@@ -71,10 +89,10 @@ namespace :vox do
                data.map do |c|
                  [format('[%<id>s](%<url>s)', c),
                   c[:score] || 'N/A',
-                  format('`%<affects>s`', c)]
+                  format('`%<affects>s`', clean_purl(c))]
                end
              else
-               data.map {|c| [c[:id], c[:score] || 'N/A', c[:affects]]}
+               data.map {|c| [c[:id], c[:score] || 'N/A', clean_purl(c[:affects])]}
              end
 
       labels = ['Identifier', 'CVSS 3.1 Score', 'Affects']
@@ -99,10 +117,10 @@ namespace :vox do
                data.map do |c|
                  [format('[%<id>s](%<url>s)', c),
                   c[:score] || 'N/A',
-                  format('`%<resolved_by>s`', c)]
+                  format('`%<resolved_by>s`', clean_purl(c))]
                end
              else
-               data.map {|c| [c[:id], c[:score] || 'N/A', c[:resolved_by]]}
+               data.map {|c| [c[:id], c[:score] || 'N/A', clean_purl(c[:resolved_by])]}
              end
 
       labels = ['Identifier', 'CVSS 3.1 Score', 'Resolved By']
