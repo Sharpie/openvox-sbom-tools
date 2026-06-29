@@ -65,7 +65,7 @@ namespace :vox do
       data = OpenVox::SBOMTools::Report.cves(args[:project], args[:tag])
       # Sort by package name, then by CVSS score. Score positions are
       # swapped to create descending order.
-      data.sort! {|a, b| [a[:affects].to_s, b[:score]&.to_f] <=> [b[:affects].to_s, a[:score]&.to_f]}
+      data.sort! {|a, b| [a[:affects].to_s, b[:score].to_f] <=> [b[:affects].to_s, a[:score].to_f]}
 
       data = if args[:linkify]
                data.map do |c|
@@ -93,7 +93,7 @@ namespace :vox do
       data = OpenVox::SBOMTools::Report.cves_fixed(args[:project], args[:from], args[:to])
       # Sort by package name, then by CVSS score. Score positions are
       # swapped to create descending order.
-      data.sort! {|a, b| [a[:resolved_by].to_s, b[:score]&.to_f] <=> [b[:resolved_by].to_s, a[:score]&.to_f]}
+      data.sort! {|a, b| [a[:resolved_by].to_s, b[:score].to_f] <=> [b[:resolved_by].to_s, a[:score].to_f]}
 
       data = if args[:linkify]
                data.map do |c|

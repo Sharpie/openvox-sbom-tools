@@ -77,7 +77,8 @@ module OpenVox::SBOMTools
     def cves(project, tag)
       sbom_path = OpenVox::SBOMTools::SBOM.file_path(project, tag)
 
-      cve_report = OpenVox::SBOMTools::Exec.exec('grype', '--output=cyclonedx-json',
+      cve_report = OpenVox::SBOMTools::Exec.exec('grype', '--by-cve',
+                                                 '--output=cyclonedx-json',
                                                  sbom_path)
 
       # TODO Handle failures.
@@ -85,7 +86,13 @@ module OpenVox::SBOMTools
 
       cves = data['vulnerabilities'].map do |vuln|
         id = vuln['id']
-        url = vuln['source']['url']
+        url = if id.start_with?('CVE-')
+                # Prefer NVD records for assigned CVE IDs.
+                format('https://nvd.nist.gov/vuln/detail/%<id>s', id:)
+              else
+                # Could be something else. Like GitHub.
+                vuln['source']['url']
+              end
         score = vuln['ratings'].find {|r| r['method'] == 'CVSSv31'}&.dig('score')
         affects = Purl.parse(vuln['affects'].first['ref'])
         # Grype echos PURLs back with data duplicated into the qualifiers
@@ -96,17 +103,20 @@ module OpenVox::SBOMTools
       end
 
       runtime_component = data['components'].find {|c| c['name'] =~ /-runtime$/}
-      runtime_version   = Gem::Version.new(runtime_component['version'])
 
-      fixed_cves = RUNTIME_CVE_FIXES.flat_map do |fix_version, ids|
-        if Gem::Requirement.new(fix_version).satisfied_by?(runtime_version)
-          ids
-        else
-          []
+      unless runtime_component.nil?
+        runtime_version   = Gem::Version.new(runtime_component['version'])
+
+        fixed_cves = RUNTIME_CVE_FIXES.flat_map do |fix_version, ids|
+          if Gem::Requirement.new(fix_version).satisfied_by?(runtime_version)
+            ids
+          else
+            []
+          end
         end
-      end
 
-      cves.reject! {|c| fixed_cves.include?(c[:id])}
+        cves.reject! {|c| fixed_cves.include?(c[:id])}
+      end
 
       cves
     end
