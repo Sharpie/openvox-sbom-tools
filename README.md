@@ -2,7 +2,12 @@ OpenVox SBOM Tools
 ==================
 
 This repository contains tooling for generating and manipulating
-Software Bill of Materials (SBOMs) for various OpenVox projects.
+Software Bill of Materials (SBOMs) for the following OpenVox projects:
+
+  - `openbolt`
+  - `openvox-agent`
+  - `openvoxdb`
+  - `openvox-server`
 
 This tooling automates the following workflows:
 
@@ -13,12 +18,6 @@ This tooling automates the following workflows:
     format, from data files.
 
   - Generation of CVE information from SBOMs.
-
-> [!NOTE]
->
-> Currently, this project only covers the `openvox-agent` and `openbolt`
-> packages, and only package versions released in 2026. Support for
-> `openvox-server` and `openvoxdb` is planned.
 
 ## Installation
 
