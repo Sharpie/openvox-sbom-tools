@@ -17,6 +17,8 @@ module OpenVox::SBOMTools
                                    branch: 'main',
                                    path: 'bundled_gems.json'},
 
+      'jruby_stdlib_gems.json' => {repo: 'jruby/jruby'},
+
       'platforms.json' => {repo: 'OpenVoxProject/shared-actions',
                            branch: 'main',
                            path: 'platforms.json'},
@@ -63,6 +65,8 @@ module OpenVox::SBOMTools
                    OpenVox::SBOMTools::Sources::OpenVoxAgent.new(file, **opts)
                  when 'openbolt_component_info.json'
                    OpenVox::SBOMTools::Sources::OpenBolt.new(file, **opts)
+                 when 'jruby_stdlib_gems.json'
+                   OpenVox::SBOMTools::Sources::JRubyStdlib.new(file, **opts)
                  else
                    OpenVox::SBOMTools::Sources::GitHub.new(file, **opts)
                  end
