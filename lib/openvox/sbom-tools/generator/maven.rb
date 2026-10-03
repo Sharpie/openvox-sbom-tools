@@ -37,7 +37,7 @@ module OpenVox::SBOMTools::Generator
       pom_url = format('https://repo.clojars.org/org/openvoxproject/%<artifact>s/%<tag>s/%<artifact>s-%<tag>s.pom',
                        artifact:, tag:)
 
-      get_file(pom_url, File.join(workdir, 'pom.xml'))
+      http_get_file(pom_url, File.join(workdir, 'pom.xml'))
 
       $stderr.puts 'Running: mvn makeAggregateBom'
       exec('mvn', "org.cyclonedx:cyclonedx-maven-plugin:#{CYCLONEDX_PLUGIN_VERSION}:makeAggregateBom",
