@@ -80,7 +80,40 @@ module OpenVox::SBOMTools
       diff.compact
     end
 
-    def cves(project, tag)
+    def snyk_cves(project, tag)
+      sbom_path = OpenVox::SBOMTools::SBOM.file_path(project, tag)
+
+      cve_report = OpenVox::SBOMTools::Exec.exec('snyk', 'sbom', 'test',
+                                                 '--json',
+                                                 "--file=#{sbom_path}")
+
+      # TODO Handle failures.
+      data = JSON.parse(cve_report.stdout)
+
+      cves = data['vulnerabilities'].map do |vuln|
+        # FIXME: Fall back to GitHub if CVE list is empty.
+        id    = vuln['identifiers']['CVE'].first
+        score = vuln['cvssScore']
+        url   = format('https://nvd.nist.gov/vuln/detail/%<id>s', id:)
+
+        type            = vuln['packageManager']
+        version         = vuln['version']
+        namespace, name = case type
+                          when 'maven'
+                            vuln['packageName'].split(':')
+                          else
+                            [nil, vuln['packageName']]
+                          end
+
+        affects = Purl::PackageURL.new(type:, name:, namespace:, version:)
+
+        {id:, url:, score:, affects:}
+      end
+
+      cves
+    end
+
+    def cves(project, tag, add_snyk: false, **options)
       sbom_path = OpenVox::SBOMTools::SBOM.file_path(project, tag)
 
       cve_report = OpenVox::SBOMTools::Exec.exec('grype', '--by-cve',
@@ -111,6 +144,12 @@ module OpenVox::SBOMTools
         {id:, url:, score:, affects:}
       end
 
+      if add_snyk
+        cves += snyk_cves(project, tag)
+        # Prefer results returned by Grype as these come from public databases.
+        cves.uniq! {|c| c[:id]}
+      end
+
       runtime_component = data['components'].find {|c| c['name'] =~ /-runtime$/}
 
       unless runtime_component.nil?
@@ -130,10 +169,10 @@ module OpenVox::SBOMTools
       cves
     end
 
-    def cves_fixed(project, from, to)
+    def cves_fixed(project, from, to, add_snyk:, **options)
       sbom = OpenVox::SBOMTools::SBOM[project, to]
-      cves_before = cves(project, from)
-      cves_after  = cves(project, to)
+      cves_before = cves(project, from, add_snyk:)
+      cves_after  = cves(project, to, add_snyk:)
 
       extract_purls = lambda do |bom|
         bom['components'].map do |c|
@@ -157,7 +196,13 @@ module OpenVox::SBOMTools
       fixed = cves_before.select {|c| ! ids_after.include?(c[:id]) }
 
       fixed.each do |cve|
-        cve[:resolved_by] = purls.find {|c| cve[:affects].versionless == c.versionless}
+#       cve[:resolved_by] = purls.find {|c| cve[:affects].versionless == c.versionless}
+        cve[:resolved_by] = purls.find do |purl|
+          affected = cve[:affects]
+          purl.type      == affected.type &&
+          purl.namespace == affected.namespace &&
+          purl.name      == affected.name
+        end
       end
 
       fixed

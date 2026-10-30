@@ -1,3 +1,4 @@
+require 'json'
 require 'purl'
 
 require_relative 'lib/openvox/sbom-tools'
@@ -76,11 +77,13 @@ namespace :vox do
     end
 
     desc "Print CVEs reported for project and tag."
-    task :cves, [:project, :tag, :linkify] do |_, args|
+    task :cves, [:project, :tag, :linkify, :add_snyk] do |_, args|
       validate_project!(args[:project])
-      args.with_defaults(linkify: false)
+      _args = args.instance_variable_get('@hash')
+      _args[:linkify]  = args[:linkify].nil? ? false : JSON.parse(args[:linkify])
+      _args[:add_snyk] = args[:add_snyk].nil? ? false : JSON.parse(args[:add_snyk])
 
-      data = OpenVox::SBOMTools::Report.cves(args[:project], args[:tag])
+      data = OpenVox::SBOMTools::Report.cves(args[:project], args[:tag], **args)
       # Sort by package name, then by CVSS score. Score positions are
       # swapped to create descending order.
       data.sort! {|a, b| [a[:affects].to_s, b[:score].to_f] <=> [b[:affects].to_s, a[:score].to_f]}
@@ -104,11 +107,13 @@ namespace :vox do
     end
 
     desc "Print CVEs fixes between project tags."
-    task :cves_fixed, [:project, :from, :to, :linkify] do |_, args|
+    task :cves_fixed, [:project, :from, :to, :linkify, :add_snyk] do |_, args|
       validate_project!(args[:project])
-      args.with_defaults(linkify: false)
+      _args = args.instance_variable_get('@hash')
+      _args[:linkify]  = args[:linkify].nil? ? false : JSON.parse(args[:linkify])
+      _args[:add_snyk] = args[:add_snyk].nil? ? false : JSON.parse(args[:add_snyk])
 
-      data = OpenVox::SBOMTools::Report.cves_fixed(args[:project], args[:from], args[:to])
+      data = OpenVox::SBOMTools::Report.cves_fixed(args[:project], args[:from], args[:to], **args)
       # Sort by package name, then by CVSS score. Score positions are
       # swapped to create descending order.
       data.sort! {|a, b| [a[:resolved_by].to_s, b[:score].to_f] <=> [b[:resolved_by].to_s, a[:score].to_f]}
